@@ -1,15 +1,17 @@
 namespace rhino.compute
 {
     using System;
-    using Microsoft.AspNetCore.Hosting;
-    using Microsoft.Extensions.Hosting;
-    using Microsoft.Extensions.DependencyInjection;
-    using Microsoft.Extensions.Logging;
-    using CommandLine;
-    using Serilog;
-    using Serilog.Events;
-    using Microsoft.Extensions.Configuration;
     using System.IO;
+
+    using CommandLine;
+
+    using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
+    using Microsoft.Extensions.Logging;
+
+    using Serilog;
 
     public class Program
     {
@@ -18,11 +20,11 @@ namespace rhino.compute
         /// rhino.compute.exe --childcount 8
         /// This would launch rhino.compute with 8 child compute.geometry.exe processes
         /// </summary>
-        class Options
+        private class Options
         {
             [Option("childof",
              Required = false,
-             HelpText = @"Process Handle of parent process. Compute watches for the existence 
+             HelpText = @"Process Handle of parent process. Compute watches for the existence
 of this handle and will shut down when this process has exited")]
             public int ChildOf { get; set; }
 
@@ -37,9 +39,9 @@ of this handle and will shut down when this process has exited")]
              HelpText = "Determines whether to launch a child compute.geometry process when rhino.compute gets started")]
             public bool SpawnOnStartup { get; set; }
 
-            [Option("idlespan", 
+            [Option("idlespan",
              Required = false,
-             HelpText = 
+             HelpText =
 @"Seconds that child compute.geometry processes should remain open between requests. (Default 1 hour)
 When rhino.compute.exe does not receive requests to solve over a period of 'idlespan' seconds, child
 compute.geometry.exe processes will shut down and stop incurring core hour billing. At some date in the
@@ -53,8 +55,9 @@ requests while the child processes are launching.")]
             public int Port { get; set; } = -1;
         }
 
-        static System.Diagnostics.Process _parentProcess;
-        static System.Timers.Timer _selfDestructTimer;
+        private static System.Diagnostics.Process _parentProcess;
+        private static System.Timers.Timer _selfDestructTimer;
+
         public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -101,10 +104,9 @@ requests while the child processes are launching.")]
                         b.UseUrls($"http://localhost:{port}");
                         ComputeChildren.ParentPort = port;
                     }
-
                 }).Build();
 
-            if(_parentProcess?.MainModule != null)
+            if (_parentProcess?.MainModule != null)
             {
                 var parentPath = _parentProcess.MainModule.FileName;
                 if (Path.GetFileName(parentPath) == "Rhino.exe")
@@ -114,7 +116,7 @@ requests while the child processes are launching.")]
             }
 
             Log.Information($"Rhino compute started at {DateTime.Now.ToLocalTime()}");
-            
+
             var logger = host.Services.GetRequiredService<ILogger<ReverseProxyModule>>();
             ReverseProxyModule.InitializeConcurrentRequestLogging(logger);
 

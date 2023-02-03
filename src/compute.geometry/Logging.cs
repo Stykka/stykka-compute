@@ -1,14 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
 
 namespace compute.geometry
 {
-    static class Logging
+    internal static class Logging
     {
-        static bool _enabled = false;
+        private static bool _enabled = false;
         public static List<string> Warnings { get; set; }
         public static List<string> Errors { get; set; }
 
@@ -33,6 +34,16 @@ namespace compute.geometry
                 .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
                 .Filter.ByExcluding("RequestPath in ['/healthcheck', '/favicon.ico']")
                 .Enrich.FromLogContext()
+                .WriteTo.Sentry(o =>
+                {
+                    o.Dsn = "https://8646793ef8af4a2cbc8856bede53db3d@o67237.ingest.sentry.io/4504616189493248";
+                    // Debug and higher are stored as breadcrumbs (default is Information)
+                    o.MinimumBreadcrumbLevel = LogEventLevel.Information;
+                    // Warning and higher is sent as event (default is Error)
+                    o.MinimumEventLevel = LogEventLevel.Warning;
+                    o.AutoSessionTracking = true;
+                    o.TracesSampleRate = 0.2;
+                })
                 .WriteTo.Console(outputTemplate: "CG {Port} [{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .WriteTo.File(new JsonFormatter(renderMessage: true), path, rollingInterval: RollingInterval.Day, retainedFileCountLimit: limit);
 

@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+
 using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Conventions;
 using Nancy.TinyIoc;
+
 using Serilog;
 
 namespace compute.geometry
@@ -30,7 +32,6 @@ namespace compute.geometry
             var runheadless = pluginObject?.GetType().GetMethod("RunHeadless");
             if (runheadless != null)
                 runheadless.Invoke(pluginObject, null);
-
 
             if (sendToConsole != null)
                 sendToConsole.SetValue(null, false);

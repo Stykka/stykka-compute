@@ -1,20 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Nancy;
-using GH_IO.Serialization;
-using Grasshopper.Kernel;
-using Grasshopper.Kernel.Types;
-using Newtonsoft.Json;
-using Grasshopper.Kernel.Data;
-using Resthopper.IO;
-using Grasshopper.Kernel.Parameters;
-using Grasshopper.Kernel.Special;
-using Rhino.Geometry;
 using System.Net;
-using Nancy.Extensions;
 using System.Reflection;
-using System.Linq;
+
+using GH_IO.Serialization;
+
+using Grasshopper.Kernel;
+using Grasshopper.Kernel.Data;
+using Grasshopper.Kernel.Types;
+
+using Nancy;
+using Nancy.Extensions;
+
+using Newtonsoft.Json;
+
+using Resthopper.IO;
 
 namespace compute.geometry
 {
@@ -59,11 +60,11 @@ namespace compute.geometry
             return null;
         }
 
-        static void SetDefaultTolerances(double absoluteTolerance, double angleToleranceDegrees)
+        private static void SetDefaultTolerances(double absoluteTolerance, double angleToleranceDegrees)
         {
             if (absoluteTolerance <= 0 || angleToleranceDegrees <= 0)
                 return;
- 
+
             var utilityType = typeof(Grasshopper.Utility);
             if (utilityType != null)
             {
@@ -72,10 +73,10 @@ namespace compute.geometry
                 {
                     method.Invoke(null, new object[] { absoluteTolerance, angleToleranceDegrees });
                 }
-            }         
+            }
         }
 
-        static void SetDefaultUnits(string modelUnits)
+        private static void SetDefaultUnits(string modelUnits)
         {
             if (String.IsNullOrEmpty(modelUnits))
                 return;
@@ -91,9 +92,9 @@ namespace compute.geometry
             }
         }
 
-        static object _ghsolvelock = new object();
+        private static object _ghsolvelock = new object();
 
-        static Response GrasshopperSolveHelper(Schema input, string body, System.Diagnostics.Stopwatch stopwatch)
+        private static Response GrasshopperSolveHelper(Schema input, string body, System.Diagnostics.Stopwatch stopwatch)
         {
             // load grasshopper file
             GrasshopperDefinition definition = GrasshopperDefinition.FromUrl(input.Pointer, true);
@@ -134,14 +135,14 @@ namespace compute.geometry
             return res;
         }
 
-        static Response Grasshopper(NancyContext ctx)
+        private static Response Grasshopper(NancyContext ctx)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             string body = ctx.Request.Body.AsString();
             if (body.StartsWith("[") && body.EndsWith("]"))
                 body = body.Substring(1, body.Length - 2);
             Schema input = JsonConvert.DeserializeObject<Schema>(body);
-           
+
             if (input.CacheSolve)
             {
                 // look in the cache to see if this has already been solved
@@ -173,7 +174,7 @@ namespace compute.geometry
             }
         }
 
-        Response GetIoNames(NancyContext ctx, bool asPost)
+        private Response GetIoNames(NancyContext ctx, bool asPost)
         {
             GrasshopperDefinition definition;
             if (asPost)
@@ -228,8 +229,8 @@ namespace compute.geometry
             rhObj.Type = pt.GetType().FullName;
             rhObj.Data = JsonConvert.SerializeObject(pt, GeometryResolver.Settings);
             return rhObj;
-
         }
+
         public static ResthopperObject GetResthopperObject<T>(object goo)
         {
             var v = (T)goo;
@@ -239,9 +240,9 @@ namespace compute.geometry
             rhObj.Data = JsonConvert.SerializeObject(v, GeometryResolver.Settings);
             return rhObj;
         }
+
         public static void PopulateParam<DataType>(GH_Param<IGH_Goo> Param, Resthopper.IO.DataTree<ResthopperObject> tree)
         {
-
             foreach (KeyValuePair<string, List<ResthopperObject>> entree in tree)
             {
                 GH_Path path = new GH_Path(GhPath.FromString(entree.Key));
@@ -252,14 +253,12 @@ namespace compute.geometry
                     DataType data = JsonConvert.DeserializeObject<DataType>(obj.Data);
                     Param.AddVolatileData(path, i, data);
                 }
-
             }
-
         }
 
         // strip bom from string -- [239, 187, 191] in byte array == (char)65279
         // https://stackoverflow.com/a/54894929/1902446
-        static string StripBom(string str)
+        private static string StripBom(string str)
         {
             if (!string.IsNullOrEmpty(str) && str[0] == (char)65279)
                 str = str.Substring(1);
@@ -275,8 +274,6 @@ namespace System.Exceptions
     {
         public PayAttentionException(string m) : base(m)
         {
-
         }
-
     }
 }

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace compute.geometry
 {
-    class Shutdown
+    internal class Shutdown
     {
-        static System.Threading.Timer _timer;
+        private static System.Threading.Timer _timer;
         internal static Dictionary<int, System.Diagnostics.Process> ParentProcesses { get; set; }
-        static int _parentPort = -1;
-        static int _idleSpan = -1;
-        static DateTime _startTime;
+        private static int _parentPort = -1;
+        private static int _idleSpan = -1;
+        private static DateTime _startTime;
 
         public static void RegisterParentProcess(int processId)
         {
@@ -56,8 +56,8 @@ namespace compute.geometry
             }
         }
 
-        static System.Net.Http.HttpClient _httpClient;
-        static DateTime _lastSpanCheck = DateTime.Now;
+        private static System.Net.Http.HttpClient _httpClient;
+        private static DateTime _lastSpanCheck = DateTime.Now;
 
         private static void TimerTask(object timerState)
         {
@@ -96,7 +96,7 @@ namespace compute.geometry
                             shutdown = true;
                         }
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
                         // not sure what to do here
                     }

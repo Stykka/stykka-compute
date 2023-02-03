@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace rhino.compute
 {
-    static class Config
+    internal static class Config
     {
         /// <summary>
         /// RHINO_COMPUTE_KEY: the API key required to make POST requests.
@@ -33,14 +32,16 @@ namespace rhino.compute
         }
 
         #region private
+
         // environment variables
-        const string RHINO_COMPUTE_KEY = "RHINO_COMPUTE_KEY";
-        const string RHINO_COMPUTE_TIMEOUT = "RHINO_COMPUTE_TIMEOUT";
-        const string RHINO_COMPUTE_MAX_REQUEST_SIZE = "RHINO_COMPUTE_MAX_REQUEST_SIZE";
+        private const string RHINO_COMPUTE_KEY = "RHINO_COMPUTE_KEY";
 
-        readonly static List<string> _warnings = new List<string>();
+        private const string RHINO_COMPUTE_TIMEOUT = "RHINO_COMPUTE_TIMEOUT";
+        private const string RHINO_COMPUTE_MAX_REQUEST_SIZE = "RHINO_COMPUTE_MAX_REQUEST_SIZE";
 
-        static T GetEnvironmentVariable<T>(string name, T defaultValue, string deprecatedName = null)
+        private static readonly List<string> _warnings = new List<string>();
+
+        private static T GetEnvironmentVariable<T>(string name, T defaultValue, string deprecatedName = null)
         {
             string value = Environment.GetEnvironmentVariable(name);
 
@@ -82,6 +83,6 @@ namespace rhino.compute
             return (T)(object)value;
         }
 
-        #endregion
+        #endregion private
     }
 }

@@ -1,18 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using Serilog;
 
 namespace rhino.compute
 {
-    static class ComputeChildren
+    internal static class ComputeChildren
     {
         /// <summary>
         /// Number of child compute.geometry processes to launch
         /// </summary>
         public static int SpawnCount { get; set; } = 1;
 
-        static DateTime _lastCall = DateTime.MinValue;
+        private static DateTime _lastCall = DateTime.MinValue;
+
         public static void UpdateLastCall()
         {
             _lastCall = DateTime.Now;
@@ -34,10 +36,12 @@ namespace rhino.compute
 
         /// <summary>Port that rhino.compute is running on</summary>
         public static int ParentPort { get; set; } = 5000;
+
         /// <summary>
         /// The system directory for the Rhino executable
         /// </summary>
-        public static string RhinoSysDir { get; set; } 
+        public static string RhinoSysDir { get; set; }
+
         /// <summary>
         /// Length of time (in seconds) since rhino.compute last made a call
         /// to a child process. The child processes use this information to
@@ -54,6 +58,7 @@ namespace rhino.compute
             var span = DateTime.Now - _lastCall;
             return (int)span.TotalSeconds;
         }
+
         /// <summary>
         /// Total number of compute.geometry processes being run
         /// </summary>
@@ -110,7 +115,7 @@ namespace rhino.compute
             if (_computeProcesses.Count < SpawnCount)
             {
                 // Bring up other child computes to SpawnCount level
-                for(int i=_computeProcesses.Count; i<SpawnCount; i++)
+                for (int i = _computeProcesses.Count; i < SpawnCount; i++)
                 {
                     LaunchCompute(false);
                 }
@@ -128,7 +133,7 @@ namespace rhino.compute
                 // pointing at the next item to use
                 if (_computeProcesses.Count > 1)
                 {
-                    for( int i=0; i<_computeProcesses.Count; i++)
+                    for (int i = 0; i < _computeProcesses.Count; i++)
                     {
                         if (_computeProcesses.Peek().Item2 == port)
                             break;
@@ -147,7 +152,7 @@ namespace rhino.compute
             }
         }
 
-        static void LaunchCompute(Queue<Tuple<Process, int>> processQueue, bool waitUntilServing)
+        private static void LaunchCompute(Queue<Tuple<Process, int>> processQueue, bool waitUntilServing)
         {
             var pathToThisAssembly = new System.IO.FileInfo(typeof(ComputeChildren).Assembly.Location);
             // compute.geometry is allowed to be either in:
@@ -214,7 +219,7 @@ namespace rhino.compute
                     {
                         break;
                     }
-                        
+
                     var span = DateTime.Now - start;
                     if (span.TotalSeconds > 60)
                     {
@@ -237,7 +242,7 @@ namespace rhino.compute
             }
         }
 
-        static bool IsPortOpen(string host, int port, TimeSpan timeout)
+        private static bool IsPortOpen(string host, int port, TimeSpan timeout)
         {
             try
             {
@@ -249,12 +254,13 @@ namespace rhino.compute
                     return success;
                 }
             }
-            catch(Exception)
+            catch (Exception)
             {
                 return false;
             }
         }
-        static object _lockObject = new object();
-        static Queue<Tuple<Process, int>> _computeProcesses = new Queue<Tuple<Process, int>>();
+
+        private static object _lockObject = new object();
+        private static Queue<Tuple<Process, int>> _computeProcesses = new Queue<Tuple<Process, int>>();
     }
 }

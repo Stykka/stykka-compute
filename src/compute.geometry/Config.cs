@@ -1,11 +1,10 @@
-﻿using Serilog;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace compute.geometry
 {
-    static class Config
+    internal static class Config
     {
         /// <summary>
         /// RHINO_COMPUTE_URLS: the list of URLs that compute will listen on.
@@ -61,25 +60,27 @@ namespace compute.geometry
         #region private
 
         // environment variables
-        const string RHINO_COMPUTE_URLS = "RHINO_COMPUTE_URLS";
-        const string RHINO_COMPUTE_KEY = "RHINO_COMPUTE_KEY";
-        const string RHINO_COMPUTE_LOG_PATH = "RHINO_COMPUTE_LOG_PATH";
-        const string RHINO_COMPUTE_LOG_RETAIN_DAYS = "RHINO_COMPUTE_LOG_RETAIN_DAYS";
-        const string RHINO_COMPUTE_DEBUG = "RHINO_COMPUTE_DEBUG";
+        private const string RHINO_COMPUTE_URLS = "RHINO_COMPUTE_URLS";
+
+        private const string RHINO_COMPUTE_KEY = "RHINO_COMPUTE_KEY";
+        private const string RHINO_COMPUTE_LOG_PATH = "RHINO_COMPUTE_LOG_PATH";
+        private const string RHINO_COMPUTE_LOG_RETAIN_DAYS = "RHINO_COMPUTE_LOG_RETAIN_DAYS";
+        private const string RHINO_COMPUTE_DEBUG = "RHINO_COMPUTE_DEBUG";
 
         // deprecated
-        const string COMPUTE_BIND_URLS = "COMPUTE_BIND_URLS";
-        const string COMPUTE_LOG_PATH = "COMPUTE_LOG_PATH";
-        const string COMPUTE_LOG_RETAIN_DAYS = "COMPUTE_LOG_RETAIN_DAYS";
+        private const string COMPUTE_BIND_URLS = "COMPUTE_BIND_URLS";
 
-        readonly static string[] _ignored = new string[] { "COMPUTE_BACKEND_PORT" };
+        private const string COMPUTE_LOG_PATH = "COMPUTE_LOG_PATH";
+        private const string COMPUTE_LOG_RETAIN_DAYS = "COMPUTE_LOG_RETAIN_DAYS";
 
-        readonly static List<string> _warnings = new List<string>();
+        private static readonly string[] _ignored = new string[] { "COMPUTE_BACKEND_PORT" };
 
-        static T GetEnvironmentVariable<T>(string name, T defaultValue, string deprecatedName = null)
+        private static readonly List<string> _warnings = new List<string>();
+
+        private static T GetEnvironmentVariable<T>(string name, T defaultValue, string deprecatedName = null)
         {
             string value = Environment.GetEnvironmentVariable(name);
-            
+
             if (string.IsNullOrWhiteSpace(value) && deprecatedName != null)
             {
                 value = Environment.GetEnvironmentVariable(deprecatedName);
@@ -96,7 +97,7 @@ namespace compute.geometry
                     return (T)(object)true;
                 return (T)(object)false;
             }
-            
+
             if (typeof(T) == typeof(int))
             {
                 if (int.TryParse(value, out int result))
@@ -109,7 +110,6 @@ namespace compute.geometry
             return (T)(object)value;
         }
 
-        #endregion
+        #endregion private
     }
 }
-

@@ -1,8 +1,25 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
+
+using Google.Cloud.PubSub.V1;
+
+using Grasshopper.Kernel.Types.Transforms;
+
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
+
+using Nancy;
+
+using Newtonsoft.Json.Linq;
+
 using Owin;
+
+using RestSharp;
+using RestSharp.Authenticators;
+using RestSharp.Authenticators.OAuth2;
 
 [assembly: OwinStartup(typeof(compute.geometry.Startup))]
 
@@ -43,6 +60,21 @@ namespace compute.geometry
                 // log request in apache format
                 string msg = $"{req.RemoteIpAddress} - [{DateTime.Now:o}] \"{req.Method} {req.Uri.AbsolutePath} {req.Protocol}\" {res.StatusCode} {contentLength}";
                 Serilog.Log.Information(msg);
+
+                TopicName topicName = new TopicName("rhino-compute-334513", "compute-solve-topic");
+
+                try
+                {
+                    // Publish a message to the topic using PublisherClient.
+                    PublisherClient publisher = await PublisherClient.CreateAsync(topicName);
+                    string messageId = await publisher.PublishAsync(msg);
+
+                    Console.WriteLine(messageId);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex);
+                }
             }
         }
     }

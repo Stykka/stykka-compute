@@ -1,8 +1,8 @@
 {
-  "profiles": {
-    "compute.geometry": {
-      "commandName": "Project",
-      "nativeDebugging": true
+    "profiles": {
+        "compute.geometry": {
+            "commandName": "Project",
+            "nativeDebugging": true
+        }
     }
-  }
 }

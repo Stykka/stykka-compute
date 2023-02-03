@@ -1,38 +1,32 @@
-﻿using Microsoft.Owin.Hosting;
-using Nancy;
-using Nancy.Routing;
-using Serilog;
-using Serilog.Context;
-using System;
+﻿using System;
 using System.Net;
 using System.Reflection;
 using System.Text;
+
+using Microsoft.Owin.Hosting;
+
+using Nancy;
+using Nancy.Routing;
+
+using Serilog;
+using Serilog.Context;
+
 using Topshelf;
 
 namespace compute.geometry
 {
-    class Program
+    internal class Program
     {
         public static IDisposable RhinoCore { get; set; }
         public static DateTime StartTime { get; set; }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Config.Load();
             Logging.Init();
 
             RhinoInside.Resolver.Initialize();
-#if DEBUG
-            // Uncomment the following to debug with core Rhino source. This
-            // tells compute to use a different RhinoCore than what RhinoInside thinks
-            // should use.
-            // (for McNeel devs only and only those devs who use the same path as Steve)
 
-            //string rhinoSystemDir = @"C:\dev\github\mcneel\rhino7\src4\bin\Debug";
-            //if (System.IO.File.Exists(rhinoSystemDir + "\\Rhino.exe"))
-                //RhinoInside.Resolver.RhinoSystemDirectory = rhinoSystemDir;
-
-#endif
             StartTime = DateTime.Now;
             Shutdown.RegisterStartTime(StartTime);
             Log.Information($"Child process started at " + StartTime.ToLocalTime().ToString());
@@ -43,7 +37,8 @@ namespace compute.geometry
                 {
                     Config.Urls = new string[] { address };
                 });
-                x.AddCommandLineDefinition("port", port => {
+                x.AddCommandLineDefinition("port", port =>
+                {
                     int p = int.Parse(port);
                     Config.Urls = new string[] { $"http://localhost:{p}" };
                 });
@@ -87,8 +82,8 @@ namespace compute.geometry
 
     internal class OwinSelfHost : ServiceControl
     {
-        readonly string[] _bind;
-        IDisposable _host;
+        private readonly string[] _bind;
+        private IDisposable _host;
 
         public OwinSelfHost()
         {
@@ -116,7 +111,8 @@ namespace compute.geometry
 
             Environment.SetEnvironmentVariable("RHINO_TOKEN", null, EnvironmentVariableTarget.Process);
 
-            Rhino.Runtime.HostUtils.OnExceptionReport += (source, ex) => {
+            Rhino.Runtime.HostUtils.OnExceptionReport += (source, ex) =>
+            {
                 Log.Error(ex, "An exception occurred while processing request");
                 Logging.LogExceptionData(ex);
             };
@@ -159,7 +155,7 @@ namespace compute.geometry
 
             if (Shutdown.ParentProcesses == null)
                 Log.Information("Listening on {Urls}", _bind);
-                    
+
             // when running in a console (not as a service), i.e. when launched as a child process of hops
             // update console title to differentiate windows (ports) and start parent process shutdown timer
             if (hctrl is Topshelf.Hosts.ConsoleRunHost)
@@ -207,7 +203,7 @@ namespace compute.geometry
                 return result.ToString();
             };
 
-            foreach(var endpoint in GeometryEndPoint.AllEndPoints)
+            foreach (var endpoint in GeometryEndPoint.AllEndPoints)
             {
                 string key = endpoint.PathURL;
                 Get[key] = _ => endpoint.Get(Context);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+
 using Nancy;
 
 namespace compute.geometry
@@ -16,12 +17,12 @@ namespace compute.geometry
             Get["sdk/csharp"] = _ => CSharpSdk(Context);
         }
 
-        static Response HomePage(NancyContext ctx)
+        private static Response HomePage(NancyContext ctx)
         {
             return new Nancy.Responses.RedirectResponse("https://www.rhino3d.com/compute");
         }
 
-        static Response GetVersion(NancyContext ctx)
+        private static Response GetVersion(NancyContext ctx)
         {
             var values = new Dictionary<string, string>();
             values.Add("rhino", Rhino.RhinoApp.Version.ToString());
@@ -33,14 +34,14 @@ namespace compute.geometry
             return response;
         }
 
-        static Response ServerTime(NancyContext ctx)
+        private static Response ServerTime(NancyContext ctx)
         {
             var response = (Nancy.Response)Newtonsoft.Json.JsonConvert.SerializeObject(DateTime.UtcNow);
             response.ContentType = "application/json";
             return response;
         }
 
-        static Response CSharpSdk(NancyContext ctx)
+        private static Response CSharpSdk(NancyContext ctx)
         {
             string content = "";
             using (var resourceStream = typeof(FixedEndPointsModule).Assembly.GetManifestResourceStream("compute.geometry.RhinoCompute.cs"))
@@ -54,14 +55,14 @@ namespace compute.geometry
 
             response.Headers.Add("Content-Disposition", "attachment; filename=RhinoCompute.cs");
             response.ContentType = "text/plain";
-            response.Contents = stream => {
+            response.Contents = stream =>
+            {
                 using (var writer = new System.IO.StreamWriter(stream))
                 {
                     writer.Write(content);
                 }
             };
-            return response.AsAttachment("RhinoCompute.cs", "text/plain" );
+            return response.AsAttachment("RhinoCompute.cs", "text/plain");
         }
     }
 }
-

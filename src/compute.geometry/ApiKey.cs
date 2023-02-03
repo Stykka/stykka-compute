@@ -3,10 +3,11 @@ using System.Collections.Generic;
 
 namespace compute.geometry
 {
-    static class ApiKey
+    internal static class ApiKey
     {
-        static string _apiKey;
-        const string _apiKeyName = "RhinoComputeKey";
+        private static string _apiKey;
+        private const string _apiKeyName = "RhinoComputeKey";
+
         public static void Initialize(Nancy.Bootstrapper.IPipelines pipelines)
         {
             _apiKey = Config.ApiKey;
@@ -18,7 +19,7 @@ namespace compute.geometry
             pipelines.BeforeRequest += CheckApiKey;
         }
 
-        static Nancy.Response CheckApiKey(Nancy.NancyContext context)
+        private static Nancy.Response CheckApiKey(Nancy.NancyContext context)
         {
             if (context.Request.Method == "GET" || context.Request.Method == "OPTIONS")
                 return null; // GET and OPTIONS requests are free

@@ -1,19 +1,22 @@
 ﻿using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+
 using Serilog;
 
 namespace rhino.compute
 {
     public class ReverseProxyModule : Carter.CarterModule
     {
-        static bool _initCalled = false;
-        static Task _initTask;
-        static HttpClient _client;
+        private static bool _initCalled = false;
+        private static Task _initTask;
+        private static HttpClient _client;
         private const string _apiKeyHeader = "RhinoComputeKey";
-        static void Initialize()
+
+        private static void Initialize()
         {
             if (_initCalled)
                 return;
@@ -33,7 +36,7 @@ namespace rhino.compute
             }
         }
 
-        static void InitializeChildren()
+        private static void InitializeChildren()
         {
             ComputeChildren.UpdateLastCall();
             _initTask = Task.Run(() =>
@@ -43,10 +46,11 @@ namespace rhino.compute
             });
         }
 
-        static System.Timers.Timer _concurrentRequestLogger;
-        static int _activeConcurrentRequests;
-        static int _maxConcurrentRequests;
-        class ConcurrentRequestTracker : System.IDisposable
+        private static System.Timers.Timer _concurrentRequestLogger;
+        private static int _activeConcurrentRequests;
+        private static int _maxConcurrentRequests;
+
+        private class ConcurrentRequestTracker : System.IDisposable
         {
             public ConcurrentRequestTracker()
             {
@@ -60,6 +64,7 @@ namespace rhino.compute
                 _activeConcurrentRequests--;
             }
         }
+
         public static void InitializeConcurrentRequestLogging(Microsoft.Extensions.Logging.ILogger logger)
         {
             // log once per minute
@@ -91,13 +96,13 @@ namespace rhino.compute
             Initialize();
         }
 
-        Task LaunchChildren(HttpRequest request, HttpResponse response)
+        private Task LaunchChildren(HttpRequest request, HttpResponse response)
         {
             int children = System.Convert.ToInt32(request.Query["children"]);
             int parentProcessId = System.Convert.ToInt32(request.Query["parent"]);
             if (Program.IsParentRhinoProcess(parentProcessId))
             {
-                for(int i=0; i<children; i++)
+                for (int i = 0; i < children; i++)
                 {
                     ComputeChildren.LaunchCompute(false);
                 }
@@ -105,7 +110,7 @@ namespace rhino.compute
             return null;
         }
 
-        async Task AwaitInitTask()
+        private async Task AwaitInitTask()
         {
             var task = _initTask;
             if (task != null)
@@ -115,7 +120,7 @@ namespace rhino.compute
             }
         }
 
-        async Task<HttpResponseMessage> SendProxyRequest(HttpRequest initialRequest, HttpMethod method, string baseurl)
+        private async Task<HttpResponseMessage> SendProxyRequest(HttpRequest initialRequest, HttpMethod method, string baseurl)
         {
             string proxyUrl = $"{baseurl}{initialRequest.Path}{initialRequest.QueryString}";
 

@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+
+using Microsoft.AspNetCore.Http;
 
 namespace rhino.compute
 {
@@ -9,10 +8,12 @@ namespace rhino.compute
     {
         private readonly RequestDelegate _next;
         private const string APIKEYNAME = "RhinoComputeKey";
+
         public ApiKeyMiddleware(RequestDelegate next)
         {
             _next = next;
         }
+
         public async Task InvokeAsync(HttpContext context)
         {
             if (!context.Request.Headers.TryGetValue(APIKEYNAME, out var extractedApiKey))

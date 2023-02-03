@@ -1,26 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
+
 using Nancy;
 using Nancy.Extensions;
-using System.Linq;
-using Newtonsoft.Json.Serialization;
+
 using Newtonsoft.Json;
-using System.Runtime.Serialization;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
+
 using Rhino.Geometry;
 using Rhino.Runtime;
-using Newtonsoft.Json.Linq;
 
 namespace compute.geometry
 {
-    class GeometryEndPoint
+    internal class GeometryEndPoint
     {
-        static List<GeometryEndPoint> _allEndPoints;
+        private static List<GeometryEndPoint> _allEndPoints;
+
         public static IEnumerable<GeometryEndPoint> AllEndPoints
         {
             get
             {
-                if(_allEndPoints==null)
+                if (_allEndPoints == null)
                 {
                     _allEndPoints = new List<GeometryEndPoint>();
                     foreach (string nameSpace in new string[] { "Rhino.Geometry", "Rhino.Geometry.Intersect" })
@@ -32,10 +36,10 @@ namespace compute.geometry
                     }
 
                     var method = typeof(Rhino.Runtime.HostUtils).GetMethod("GetCustomComputeEndpoints");
-                    if( method!=null )
+                    if (method != null)
                     {
                         var customEndpoints = method.Invoke(null, null) as Tuple<string, Type>[];
-                        if( customEndpoints != null )
+                        if (customEndpoints != null)
                         {
                             foreach (var customEndpoint in customEndpoints)
                             {
@@ -71,11 +75,10 @@ namespace compute.geometry
             }
         }
 
-
-        Type _classType;
-        ConstructorInfo[] _constructors;
-        MethodInfo[] _methods;
-        string _path;
+        private Type _classType;
+        private ConstructorInfo[] _constructors;
+        private MethodInfo[] _methods;
+        private string _path;
 
         public string Path
         {
@@ -92,7 +95,7 @@ namespace compute.geometry
         public void UpdatePath(string basePath)
         {
             int index = _path.LastIndexOf('/');
-            if( index > 0 )
+            if (index > 0)
             {
                 basePath = basePath.Replace('.', '/').ToLowerInvariant();
                 Path = basePath + _path.Substring(index);
@@ -151,8 +154,13 @@ namespace compute.geometry
             }
         }
 
-        private GeometryEndPoint(Type classType, MethodInfo[] methods) : this(classType, methods, false) { }
-        private GeometryEndPoint(Type classType, MethodInfo method) : this(classType, new MethodInfo[] { method }, true) { }
+        private GeometryEndPoint(Type classType, MethodInfo[] methods) : this(classType, methods, false)
+        {
+        }
+
+        private GeometryEndPoint(Type classType, MethodInfo method) : this(classType, new MethodInfo[] { method }, true)
+        {
+        }
 
         protected GeometryEndPoint(string path, Type classType)
         {
@@ -201,7 +209,6 @@ namespace compute.geometry
                     // generate explicit endpoints for all overloads, even if there are no parameters (see #142)
                     endpoints.Add(new GeometryEndPoint(t, overload));
                 }
-
             }
 
             return endpoints;
@@ -221,7 +228,7 @@ namespace compute.geometry
             return rc;
         }
 
-        string FunctionName()
+        private string FunctionName()
         {
             string path = Path;
             int index = path.LastIndexOf("/");
@@ -319,7 +326,7 @@ namespace compute.geometry
             return sb.ToString();
         }
 
-        enum StopAt : int
+        private enum StopAt : int
         {
             None = 0,
             PostStart = 1,
@@ -386,7 +393,7 @@ namespace compute.geometry
             return resultString;
         }
 
-        static object ProcessModifiers(object o, Dictionary<string, string> returnModifiers)
+        private static object ProcessModifiers(object o, Dictionary<string, string> returnModifiers)
         {
             if (returnModifiers != null && returnModifiers.Count > 0)
             {
@@ -409,7 +416,7 @@ namespace compute.geometry
             return o;
         }
 
-        static CommonObject CommonObjectFromJToken(JToken jsonElement)
+        private static CommonObject CommonObjectFromJToken(JToken jsonElement)
         {
             int archive3dm = (int)jsonElement["archive3dm"];
             int opennurbs = (int)jsonElement["opennurbs"];
@@ -417,7 +424,7 @@ namespace compute.geometry
             return CommonObject.FromBase64String(archive3dm, opennurbs, data);
         }
 
-        static object ToObjectHelper(JToken jsonElement, Type objectType, JsonSerializer serializer)
+        private static object ToObjectHelper(JToken jsonElement, Type objectType, JsonSerializer serializer)
         {
             if (typeof(CommonObject).IsAssignableFrom(objectType))
             {
@@ -440,7 +447,7 @@ namespace compute.geometry
             return jsonElement.ToObject(objectType, serializer);
         }
 
-        string HandlePostHelper(Newtonsoft.Json.Linq.JArray ja, Dictionary<string, string> returnModifiers)
+        private string HandlePostHelper(Newtonsoft.Json.Linq.JArray ja, Dictionary<string, string> returnModifiers)
         {
             int tokenCount = ja == null ? 0 : ja.Count;
             if (_methods != null)
@@ -493,9 +500,7 @@ namespace compute.geometry
                                         useSerializer = false;
                                     }
 
-
                                     invokeParameters[i] = DataCache.GetCachedItem(jsonobject, objectType, useSerializer ? serializer : null);
-
 
                                     if (invokeParameters[i] == null)
                                     {
@@ -642,7 +647,7 @@ namespace compute.geometry
         }
     }
 
-    class PointResolver : JsonConverter
+    internal class PointResolver : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {
@@ -667,16 +672,20 @@ namespace compute.geometry
                                 case JsonToken.String:
                                     myCustomType = new MyCustomType((string)jValue);
                                     break;
+
                                 case JsonToken.Date:
                                     myCustomType = new MyCustomType((DateTime)jValue);
                                     break;
+
                                 case JsonToken.Boolean:
                                     myCustomType = new MyCustomType((bool)jValue);
                                     break;
+
                                 case JsonToken.Integer:
                                     int i = (int)jValue;
                                     myCustomType = new MyCustomType(i);
                                     break;
+
                                 default:
                                     Console.WriteLine("Default case");
                                     Console.WriteLine(reader.TokenType.ToString());
@@ -685,13 +694,14 @@ namespace compute.geometry
                             */
             return new Rhino.Geometry.Point3d(0, 0, 0);
         }
+
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             throw new NotImplementedException();
         }
     }
 
-    class ArchivableDictionaryResolver : JsonConverter
+    internal class ArchivableDictionaryResolver : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {
@@ -714,16 +724,19 @@ namespace compute.geometry
             writer.WriteValue(json);
         }
 
-
         [Serializable]
-        class DictHelper : ISerializable
+        private class DictHelper : ISerializable
         {
             public Rhino.Collections.ArchivableDictionary SerializedDictionary { get; set; }
-            public DictHelper(Rhino.Collections.ArchivableDictionary d) { SerializedDictionary = d; }
+
+            public DictHelper(Rhino.Collections.ArchivableDictionary d)
+            { SerializedDictionary = d; }
+
             public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 SerializedDictionary.GetObjectData(info, context);
             }
+
             protected DictHelper(SerializationInfo info, StreamingContext context)
             {
                 Type t = typeof(Rhino.Collections.ArchivableDictionary);
@@ -736,7 +749,8 @@ namespace compute.geometry
 
     public class GeometryResolver : DefaultContractResolver
     {
-        static JsonSerializerSettings _settings;
+        private static JsonSerializerSettings _settings;
+
         public static JsonSerializerSettings Settings
         {
             get
@@ -764,7 +778,6 @@ namespace compute.geometry
                 {
                     return property.PropertyName != "IsValid" && property.PropertyName != "BoundingBox" && property.PropertyName != "Diameter" && property.PropertyName != "Circumference";
                 };
-
             }
             if (property.DeclaringType == typeof(Rhino.Geometry.Plane))
             {
@@ -785,7 +798,7 @@ namespace compute.geometry
                 };
             }
 
-            if(property.DeclaringType == typeof(Rhino.Geometry.Line))
+            if (property.DeclaringType == typeof(Rhino.Geometry.Line))
             {
                 property.ShouldSerialize = _ =>
                 {
@@ -803,5 +816,4 @@ namespace compute.geometry
             return property;
         }
     }
-
 }

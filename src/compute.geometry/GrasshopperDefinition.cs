@@ -1,37 +1,40 @@
 ﻿using System;
-using System.IO;
-using System.Net;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Reflection;
 
-using Rhino.Geometry;
+using GH_IO.Serialization;
 
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Special;
 using Grasshopper.Kernel.Types;
-using GH_IO.Serialization;
+
+using Newtonsoft.Json;
 
 using Resthopper.IO;
-using Newtonsoft.Json;
-using System.Linq;
+
+using Rhino.Geometry;
+
 using Serilog;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using System.Collections;
 
 namespace compute.geometry
 {
-    class GrasshopperDefinition
+    internal class GrasshopperDefinition
     {
-        static Dictionary<string, FileSystemWatcher> _filewatchers;
-        static HashSet<string> _watchedFiles = new HashSet<string>();
-        static uint _watchedFileRuntimeSerialNumber = 1;
+        private static Dictionary<string, FileSystemWatcher> _filewatchers;
+        private static HashSet<string> _watchedFiles = new HashSet<string>();
+        private static uint _watchedFileRuntimeSerialNumber = 1;
+
         public static uint WatchedFileRuntimeSerialNumber
         {
             get { return _watchedFileRuntimeSerialNumber; }
         }
-        static void RegisterFileWatcher(string path)
+
+        private static void RegisterFileWatcher(string path)
         {
             if (_filewatchers == null)
             {
@@ -69,8 +72,11 @@ namespace compute.geometry
                 _watchedFileRuntimeSerialNumber++;
         }
 
-        static void LogDebug(string message) { Serilog.Log.Debug(message); }
-        static void LogError(string message) { Serilog.Log.Error(message); }
+        private static void LogDebug(string message)
+        { Serilog.Log.Debug(message); }
+
+        private static void LogError(string message)
+        { Serilog.Log.Error(message); }
 
         public static GrasshopperDefinition FromUrl(string url, bool cache)
         {
@@ -113,7 +119,7 @@ namespace compute.geometry
                 return null;
 
             var rc = Construct(archive);
-            if (rc!=null)
+            if (rc != null)
             {
                 rc.CacheKey = DataCache.CreateCacheKey(data);
                 if (cache)
@@ -128,7 +134,7 @@ namespace compute.geometry
         private static GrasshopperDefinition Construct(Guid componentId)
         {
             var component = Grasshopper.Instances.ComponentServer.EmitObject(componentId) as GH_Component;
-            if (component==null)
+            if (component == null)
                 return null;
 
             var definition = new GH_Document();
@@ -146,16 +152,17 @@ namespace compute.geometry
 
             GrasshopperDefinition rc = new GrasshopperDefinition(definition, null);
             rc._singularComponent = component;
-            foreach(var input in component.Params.Input)
+            foreach (var input in component.Params.Input)
             {
                 rc._input[input.NickName] = new InputGroup(input);
             }
-            foreach(var output in component.Params.Output)
+            foreach (var output in component.Params.Output)
             {
                 rc._output[output.NickName] = output;
             }
             return rc;
         }
+
         private static void AddInput(IGH_Param param, string name, ref GrasshopperDefinition rc)
         {
             if (rc._input.ContainsKey(name))
@@ -164,10 +171,11 @@ namespace compute.geometry
                 rc.HasErrors = true;
                 rc.ErrorMessages.Add(msg);
                 LogError(msg);
-            }   
+            }
             else
                 rc._input[name] = new InputGroup(param);
         }
+
         private static void AddOutput(IGH_Param param, string name, ref GrasshopperDefinition rc)
         {
             if (rc._output.ContainsKey(name))
@@ -176,7 +184,7 @@ namespace compute.geometry
                 rc.HasErrors = true;
                 rc.ErrorMessages.Add(msg);
                 LogError(msg);
-            }  
+            }
             else
                 rc._output[name] = param;
         }
@@ -185,7 +193,7 @@ namespace compute.geometry
         {
             string icon = null;
             var chunk = archive.GetRootNode.FindChunk("Definition");
-            if (chunk!=null)
+            if (chunk != null)
             {
                 chunk = chunk.FindChunk("DefinitionProperties");
                 if (chunk != null)
@@ -213,7 +221,7 @@ namespace compute.geometry
             }
 
             GrasshopperDefinition rc = new GrasshopperDefinition(definition, icon);
-            foreach( var obj in definition.Objects)
+            foreach (var obj in definition.Objects)
             {
                 IGH_ContextualParameter contextualParam = obj as IGH_ContextualParameter;
                 if (contextualParam != null)
@@ -225,7 +233,6 @@ namespace compute.geometry
                     }
                     continue;
                 }
-
 
                 Type objectClass = obj.GetType();
                 var className = objectClass.Name;
@@ -249,7 +256,7 @@ namespace compute.geometry
 
                 string nickname = group.NickName;
                 var groupObjects = group.Objects();
-                if ( nickname.Contains("RH_IN") && groupObjects.Count>0)
+                if (nickname.Contains("RH_IN") && groupObjects.Count > 0)
                 {
                     var param = groupObjects[0] as IGH_Param;
                     if (param != null)
@@ -264,12 +271,12 @@ namespace compute.geometry
                     {
                         AddOutput(param, nickname, ref rc);
                     }
-                    else if(groupObjects[0] is GH_Component component)
+                    else if (groupObjects[0] is GH_Component component)
                     {
                         int outputCount = component.Params.Output.Count;
-                        for(int i=0; i<outputCount; i++)
+                        for (int i = 0; i < outputCount; i++)
                         {
-                            if(1==outputCount)
+                            if (1 == outputCount)
                             {
                                 AddOutput(component.Params.Output[i], nickname, ref rc);
                             }
@@ -298,10 +305,10 @@ namespace compute.geometry
         public bool IsLocalFileDefinition { get; set; } // default: false
         public uint FileRuntimeCacheSerialNumber { get; private set; }
         public string CacheKey { get; set; }
-        string _iconString;
-        GH_Component _singularComponent;
-        Dictionary<string, InputGroup> _input = new Dictionary<string, InputGroup>();
-        Dictionary<string, IGH_Param> _output = new Dictionary<string, IGH_Param>();
+        private string _iconString;
+        private GH_Component _singularComponent;
+        private Dictionary<string, InputGroup> _input = new Dictionary<string, InputGroup>();
+        private Dictionary<string, IGH_Param> _output = new Dictionary<string, IGH_Param>();
         public List<string> ErrorMessages = new List<string>();
 
         public GH_Path GetPath(string p)
@@ -315,7 +322,7 @@ namespace compute.geometry
         {
             foreach (var tree in values)
             {
-                if( !_input.TryGetValue(tree.ParamName, out var inputGroup))
+                if (!_input.TryGetValue(tree.ParamName, out var inputGroup))
                 {
                     continue;
                 }
@@ -329,7 +336,7 @@ namespace compute.geometry
                 inputGroup.CacheTree(tree);
 
                 IGH_ContextualParameter contextualParameter = inputGroup.Param as IGH_ContextualParameter;
-                if(contextualParameter != null)
+                if (contextualParameter != null)
                 {
                     var treeAccess = Convert.ToBoolean(contextualParameter.GetType().GetProperty("TreeAccess")?.GetValue(contextualParameter, null));
                     if (contextualParameter != null)
@@ -371,6 +378,7 @@ namespace compute.geometry
                                     }
                                 }
                                 break;
+
                             case "Number":
                                 {
                                     if (treeAccess)
@@ -406,6 +414,7 @@ namespace compute.geometry
                                     }
                                 }
                                 break;
+
                             case "Integer":
                                 {
                                     if (treeAccess)
@@ -441,6 +450,7 @@ namespace compute.geometry
                                     }
                                 }
                                 break;
+
                             case "Point":
                                 {
                                     if (treeAccess)
@@ -476,6 +486,7 @@ namespace compute.geometry
                                     }
                                 }
                                 break;
+
                             case "Line":
                                 {
                                     if (treeAccess)
@@ -511,6 +522,7 @@ namespace compute.geometry
                                     }
                                 }
                                 break;
+
                             case "Text":
                                 {
                                     if (treeAccess)
@@ -569,6 +581,7 @@ namespace compute.geometry
                                     }
                                 }
                                 break;
+
                             case "Geometry":
                                 {
                                     if (treeAccess)
@@ -611,7 +624,7 @@ namespace compute.geometry
                         continue;
                     }
                 }
-                
+
                 inputGroup.Param.VolatileData.Clear();
                 inputGroup.Param.ExpireSolution(false); // mark param as expired but don't recompute just yet!
 
@@ -898,7 +911,6 @@ namespace compute.geometry
                     continue;
                 }
             }
-
         }
 
         public Schema Solve()
@@ -911,7 +923,7 @@ namespace compute.geometry
             Definition.Enabled = true;
             Definition.NewSolution(false, GH_SolutionMode.CommandLine);
 
-            foreach(string msg in ErrorMessages)
+            foreach (string msg in ErrorMessages)
             {
                 outputSchema.Errors.Add(msg);
             }
@@ -945,90 +957,105 @@ namespace compute.geometry
                                     resthopperObjectList.Add(GetResthopperObject<bool>(rhValue));
                                 }
                                 break;
+
                             case GH_Point ghValue:
                                 {
                                     Point3d rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Point3d>(rhValue));
                                 }
                                 break;
+
                             case GH_Vector ghValue:
                                 {
                                     Vector3d rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Vector3d>(rhValue));
                                 }
                                 break;
+
                             case GH_Integer ghValue:
                                 {
                                     int rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<int>(rhValue));
                                 }
                                 break;
+
                             case GH_Number ghValue:
                                 {
                                     double rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<double>(rhValue));
                                 }
                                 break;
+
                             case GH_String ghValue:
                                 {
                                     string rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<string>(rhValue));
                                 }
                                 break;
+
                             case GH_SubD ghValue:
                                 {
                                     SubD rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<SubD>(rhValue));
                                 }
                                 break;
+
                             case GH_Line ghValue:
                                 {
                                     Line rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Line>(rhValue));
                                 }
                                 break;
+
                             case GH_Curve ghValue:
                                 {
                                     Curve rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Curve>(rhValue));
                                 }
                                 break;
+
                             case GH_Circle ghValue:
                                 {
                                     Circle rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Circle>(rhValue));
                                 }
                                 break;
+
                             case GH_Plane ghValue:
                                 {
                                     Plane rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Plane>(rhValue));
                                 }
                                 break;
+
                             case GH_Rectangle ghValue:
                                 {
                                     Rectangle3d rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Rectangle3d>(rhValue));
                                 }
                                 break;
+
                             case GH_Box ghValue:
                                 {
                                     Box rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Box>(rhValue));
                                 }
                                 break;
+
                             case GH_Surface ghValue:
                                 {
                                     Brep rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Brep>(rhValue));
                                 }
                                 break;
+
                             case GH_Brep ghValue:
                                 {
                                     Brep rhValue = ghValue.Value;
                                     resthopperObjectList.Add(GetResthopperObject<Brep>(rhValue));
                                 }
                                 break;
+
                             case GH_Mesh ghValue:
                                 {
                                     Mesh rhValue = ghValue.Value;
@@ -1044,7 +1071,6 @@ namespace compute.geometry
 
                 outputSchema.Values.Add(outputTree);
             }
-
 
             if (outputSchema.Values.Count < 1)
                 throw new System.Exceptions.PayAttentionException("Looks like you've missed something..."); // TODO
@@ -1079,7 +1105,7 @@ namespace compute.geometry
             }
         }
 
-        static string ParamTypeName(IGH_Param param)
+        private static string ParamTypeName(IGH_Param param)
         {
             Type t = param.GetType();
             // TODO: Figure out why the GetGeometryParameter throws exceptions when calling TypeName
@@ -1096,12 +1122,12 @@ namespace compute.geometry
                 return _iconString;
 
             System.Drawing.Bitmap bmp = null;
-            if (_singularComponent!=null)
+            if (_singularComponent != null)
             {
                 bmp = _singularComponent.Icon_24x24;
             }
 
-            if (bmp!=null)
+            if (bmp != null)
             {
                 using (var ms = new MemoryStream())
                 {
@@ -1246,14 +1272,14 @@ namespace compute.geometry
 
         // strip bom from string -- [239, 187, 191] in byte array == (char)65279
         // https://stackoverflow.com/a/54894929/1902446
-        static string StripBom(string str)
+        private static string StripBom(string str)
         {
             if (!string.IsNullOrEmpty(str) && str[0] == (char)65279)
                 str = str.Substring(1);
             return str;
         }
 
-        static ResthopperObject GetResthopperObject<T>(object goo)
+        private static ResthopperObject GetResthopperObject<T>(object goo)
         {
             var v = (T)goo;
             ResthopperObject rhObj = new ResthopperObject();
@@ -1262,9 +1288,10 @@ namespace compute.geometry
             return rhObj;
         }
 
-        class InputGroup
+        private class InputGroup
         {
-            object _default = null;
+            private object _default = null;
+
             public InputGroup(IGH_Param param)
             {
                 Param = param;
@@ -1273,13 +1300,13 @@ namespace compute.geometry
                 {
                     _default = ghNumber.Value;
                 }
-                else if(_default is GH_Boolean ghBoolean)
+                else if (_default is GH_Boolean ghBoolean)
                 {
                     _default = ghBoolean.Value;
                 }
             }
 
-            object GetDefaultValueHelper(IGH_Param param, int depth)
+            private object GetDefaultValueHelper(IGH_Param param, int depth)
             {
                 switch (param)
                 {
@@ -1292,6 +1319,7 @@ namespace compute.geometry
                             }
                         }
                         break;
+
                     case Grasshopper.Kernel.IGH_ContextualParameter _:
                         {
                             if (0 == depth && param.Sources.Count == 1)
@@ -1301,58 +1329,83 @@ namespace compute.geometry
                             }
                         }
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Arc _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Boolean paramBool:
                         if (paramBool.PersistentDataCount == 1)
                             return paramBool.PersistentData[0][0].Value;
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Box _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Brep _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Circle _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Colour _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Complex _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Culture _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Curve _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Field _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_FilePath _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_GenericObject _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Geometry _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Group _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Guid _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Integer paramInt:
                         if (paramInt.PersistentDataCount == 1)
                             return paramInt.PersistentData[0][0].Value;
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Interval _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Interval2D _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_LatLonLocation _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Line _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Matrix _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Mesh _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_MeshFace _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_MeshParameters _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Number paramNumber:
                         if (paramNumber.PersistentDataCount == 1)
                             return paramNumber.PersistentData[0][0].Value;
@@ -1362,10 +1415,12 @@ namespace compute.geometry
                         if (paramPlane.PersistentDataCount == 1)
                             return paramPlane.PersistentData[0][0].Value;
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Point paramPoint:
                         if (paramPoint.PersistentDataCount == 1)
                             return paramPoint.PersistentData[0][0].Value;
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Rectangle _:
                         break;
                     //case Grasshopper.Kernel.Parameters.Param_ScriptVariable _:
@@ -1373,24 +1428,33 @@ namespace compute.geometry
                         if (paramString.PersistentDataCount == 1)
                             return paramString.PersistentData[0][0].Value;
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_StructurePath _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_SubD _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Surface _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Time _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Transform _:
                         break;
+
                     case Grasshopper.Kernel.Parameters.Param_Vector paramVector:
                         if (paramVector.PersistentDataCount == 1)
                             return paramVector.PersistentData[0][0].Value;
                         break;
+
                     case Grasshopper.Kernel.Special.GH_NumberSlider paramSlider:
                         return paramSlider.CurrentValue;
+
                     case Grasshopper.Kernel.Special.GH_Panel paramPanel:
                         return paramPanel.UserText;
+
                     case Grasshopper.Kernel.Special.GH_ValueList paramValueList:
                         return paramValueList.FirstSelectedItem.Value;
                 }
@@ -1412,7 +1476,7 @@ namespace compute.geometry
             public int GetAtLeast()
             {
                 IGH_ContextualParameter contextualParameter = Param as IGH_ContextualParameter;
-                if(contextualParameter!=null)
+                if (contextualParameter != null)
                 {
                     return contextualParameter.AtLeast;
                 }
@@ -1437,7 +1501,7 @@ namespace compute.geometry
                 if (contextualParameter != null)
                 {
                     var result = contextualParameter.GetType().GetProperty("TreeAccess")?.GetValue(contextualParameter, null);
-                    if(result != null)
+                    if (result != null)
                         return (bool)result;
                 }
                 return false;
@@ -1457,7 +1521,7 @@ namespace compute.geometry
                     var pType = par.GetType();
                     var props = pType.GetProperties(BindingFlags.NonPublic | BindingFlags.Instance);
                     var info = props.FirstOrDefault(x => x.Name == "Minimum");
-                    if(info != null)
+                    if (info != null)
                     {
                         var val = info.GetValue(par, null);
                         if (val != null)
@@ -1482,7 +1546,7 @@ namespace compute.geometry
                     var pType = par.GetType();
                     var props = pType.GetProperties(BindingFlags.NonPublic | BindingFlags.Instance);
                     var info = props.FirstOrDefault(x => x.Name == "Maximum");
-                    if(info != null)
+                    if (info != null)
                     {
                         var val = info.GetValue(par, null);
                         if (val != null)
@@ -1532,7 +1596,7 @@ namespace compute.geometry
                 _tree = tree;
             }
 
-            DataTree<ResthopperObject> _tree;
+            private DataTree<ResthopperObject> _tree;
         }
     }
 }

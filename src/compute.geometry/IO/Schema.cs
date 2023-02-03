@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using Newtonsoft.Json;
 
 namespace Resthopper.IO
 {
     public class Schema
     {
-        public Schema() {}
+        public Schema()
+        { }
 
         [JsonProperty(PropertyName = "absolutetolerance")]
         public double AbsoluteTolerance { get; set; } = 0;
@@ -48,7 +50,6 @@ namespace Resthopper.IO
     {
         [JsonProperty(PropertyName = "requestedFile")]
         public string RequestedFile { get; set; }
-
     }
 
     public class IoParamSchema
@@ -86,8 +87,8 @@ namespace Resthopper.IO
     {
         public HTTPRecord()
         {
-
         }
+
         public string IORequest { get; set; }
         public string IOResponse { get; set; }
         public string SolveRequest { get; set; }

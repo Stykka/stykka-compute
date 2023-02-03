@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using GH_IO.Serialization;
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace compute.geometry
 {
-    static class DataCache
+    internal static class DataCache
     {
-        class CachedDefinition
+        private class CachedDefinition
         {
-            public GrasshopperDefinition Definition{ get; set;}
+            public GrasshopperDefinition Definition { get; set; }
             public uint WatchedFileRuntimeSerialNumber { get; set; }
         }
 
-        class CachedResults
+        private class CachedResults
         {
             public GrasshopperDefinition Definition { get; set; }
             public uint WatchedFileRuntimeSerialNumber { get; set; }
@@ -38,7 +38,8 @@ namespace compute.geometry
                 return sb.ToString();
             }
         }
-        static bool LooksLikeACacheKey(string key)
+
+        private static bool LooksLikeACacheKey(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
                 return false;
@@ -49,8 +50,9 @@ namespace compute.geometry
             return true;
         }
 
-        static string _definitionCacheDirectory;
-        static string DefinitionCacheDirectory
+        private static string _definitionCacheDirectory;
+
+        private static string DefinitionCacheDirectory
         {
             get
             {
@@ -63,14 +65,14 @@ namespace compute.geometry
             }
         }
 
-        static int CompareFilesByDate(string a, string b)
+        private static int CompareFilesByDate(string a, string b)
         {
             var fileInfoA = new System.IO.FileInfo(a);
             var fileInfoB = new System.IO.FileInfo(b);
             return DateTime.Compare(fileInfoB.LastAccessTime, fileInfoA.LastAccessTime);
         }
 
-        static void CGCacheDirectory()
+        private static void CGCacheDirectory()
         {
             try
             {
@@ -78,23 +80,23 @@ namespace compute.geometry
                 {
                     var files = System.IO.Directory.GetFiles(DefinitionCacheDirectory);
                     const int ALLOWED_COUNT = 20;
-                    if (files!=null && files.Length > ALLOWED_COUNT)
+                    if (files != null && files.Length > ALLOWED_COUNT)
                     {
                         Array.Sort(files, CompareFilesByDate);
-                        for(int i = ALLOWED_COUNT; i< files.Length; i++)
+                        for (int i = ALLOWED_COUNT; i < files.Length; i++)
                         {
                             System.IO.File.Delete(files[i]);
                         }
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Serilog.Log.Error(ex, "exception while GC on cache directory");
             }
         }
 
-        static string DefinitionCacheFileName(string key)
+        private static string DefinitionCacheFileName(string key)
         {
             if (LooksLikeACacheKey(key))
             {
@@ -119,7 +121,7 @@ namespace compute.geometry
                         string data = System.IO.File.ReadAllText(filename);
                         return GrasshopperDefinition.FromBase64String(data, true);
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         Serilog.Log.Error($"Unable to read cache file: {filename}");
                         Serilog.Log.Error(ex, "File error exception");
@@ -129,7 +131,7 @@ namespace compute.geometry
             }
             if (def.Definition.IsLocalFileDefinition)
             {
-                if(def.WatchedFileRuntimeSerialNumber != GrasshopperDefinition.WatchedFileRuntimeSerialNumber)
+                if (def.WatchedFileRuntimeSerialNumber != GrasshopperDefinition.WatchedFileRuntimeSerialNumber)
                 {
                     System.Runtime.Caching.MemoryCache.Default.Remove(key);
                     return null;
@@ -160,7 +162,7 @@ namespace compute.geometry
                         System.IO.File.WriteAllText(filename, data);
                         System.Threading.Tasks.Task.Run(() => DataCache.CGCacheDirectory());
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         Serilog.Log.Error($"Unable to write cache file: {filename}");
                         Serilog.Log.Error(ex, "File error exception");
@@ -209,8 +211,8 @@ namespace compute.geometry
             string jsonString = token.ToString();
             if (jsonString.StartsWith("{") &&
                 jsonString.EndsWith("}") &&
-                jsonString.IndexOf("url", StringComparison.OrdinalIgnoreCase)>0 &&
-                jsonString.IndexOf("http", StringComparison.OrdinalIgnoreCase)>0)
+                jsonString.IndexOf("url", StringComparison.OrdinalIgnoreCase) > 0 &&
+                jsonString.IndexOf("http", StringComparison.OrdinalIgnoreCase) > 0)
             {
                 Dictionary<string, string> cacheDictionary = new Dictionary<string, string>();
                 cacheDictionary = token.ToObject(cacheDictionary.GetType()) as Dictionary<string, string>;
@@ -221,7 +223,7 @@ namespace compute.geometry
                 JToken jtoken = null;
                 string key = $"url:{url.ToLower()}";
                 Tuple<JToken, object> cacheEntry = System.Runtime.Caching.MemoryCache.Default.Get(key) as Tuple<JToken, object>;
-                if( cacheEntry!=null)
+                if (cacheEntry != null)
                 {
                     Rhino.Geometry.GeometryBase geometry = cacheEntry.Item2 as Rhino.Geometry.GeometryBase;
                     if (geometry != null)
@@ -239,7 +241,7 @@ namespace compute.geometry
                     }
                 }
 
-                if( jtoken!=null )
+                if (jtoken != null)
                 {
                     object rc = null;
                     if (serializer == null)
